@@ -1,14 +1,21 @@
 import { PieChart, Pie, Cell, ResponsiveContainer, Legend, Tooltip } from "recharts";
+import { useAnalysis } from "@/contexts/AnalysisContext";
 
 interface SentimentChartProps {
   detailed?: boolean;
 }
 
 export const SentimentChart = ({ detailed = false }: SentimentChartProps) => {
-  const data = [
-    { name: "Positive", value: 3247, color: "hsl(142, 76%, 36%)" },
-    { name: "Neutral", value: 5892, color: "hsl(197, 71%, 52%)" },
-    { name: "Negative", value: 3708, color: "hsl(0, 84%, 60%)" },
+  const { results } = useAnalysis();
+
+  const data = results ? [
+    { name: "Positive", value: results.sentimentDistribution.positive, color: "hsl(142, 76%, 36%)" },
+    { name: "Neutral", value: results.sentimentDistribution.neutral, color: "hsl(197, 71%, 52%)" },
+    { name: "Negative", value: results.sentimentDistribution.negative, color: "hsl(0, 84%, 60%)" },
+  ] : [
+    { name: "Positive", value: 0, color: "hsl(142, 76%, 36%)" },
+    { name: "Neutral", value: 0, color: "hsl(197, 71%, 52%)" },
+    { name: "Negative", value: 0, color: "hsl(0, 84%, 60%)" },
   ];
 
   return (

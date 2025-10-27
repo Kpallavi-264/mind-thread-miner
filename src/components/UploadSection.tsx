@@ -4,11 +4,14 @@ import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { useToast } from "@/hooks/use-toast";
 import { useNavigate } from "react-router-dom";
+import { useAnalysis } from "@/contexts/AnalysisContext";
+import { processTweets } from "@/lib/tweetProcessor";
 
 export const UploadSection = () => {
   const [dragActive, setDragActive] = useState(false);
   const { toast } = useToast();
   const navigate = useNavigate();
+  const { setResults, setIsProcessing } = useAnalysis();
 
   const handleDrag = useCallback((e: React.DragEvent) => {
     e.preventDefault();
@@ -37,7 +40,7 @@ export const UploadSection = () => {
     }
   }, []);
 
-  const handleFile = (file: File) => {
+  const handleFile = async (file: File) => {
     const validTypes = ['application/json', 'text/csv', 'text/plain'];
     
     if (!validTypes.includes(file.type) && !file.name.endsWith('.csv')) {
@@ -50,14 +53,48 @@ export const UploadSection = () => {
     }
 
     toast({
-      title: "File uploaded successfully",
-      description: `Processing ${file.name}...`,
+      title: "Processing started",
+      description: `Analyzing ${file.name} with SBERT embeddings...`,
     });
 
-    // Simulate processing and navigate to dashboard
-    setTimeout(() => {
-      navigate("/dashboard");
-    }, 1500);
+    setIsProcessing(true);
+    navigate("/dashboard");
+
+    try {
+      const text = await file.text();
+      let data: any[];
+      
+      if (file.name.endsWith('.json')) {
+        data = JSON.parse(text);
+      } else {
+        // Simple CSV parser
+        const lines = text.split('\n').filter(l => l.trim());
+        const headers = lines[0].split(',').map(h => h.trim());
+        data = lines.slice(1).map(line => {
+          const values = line.split(',');
+          const obj: any = {};
+          headers.forEach((h, i) => obj[h] = values[i]?.trim());
+          return obj;
+        });
+      }
+
+      const results = await processTweets(data);
+      setResults(results);
+      
+      toast({
+        title: "Analysis complete!",
+        description: `Processed ${results.tweets.length} tweets with ${results.clusters.length} clusters identified.`,
+      });
+    } catch (error) {
+      console.error("Processing error:", error);
+      toast({
+        title: "Processing failed",
+        description: error instanceof Error ? error.message : "Failed to process file",
+        variant: "destructive",
+      });
+    } finally {
+      setIsProcessing(false);
+    }
   };
 
   return (
