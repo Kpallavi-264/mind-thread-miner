@@ -89,9 +89,9 @@ export async function processTweets(rawData: any[]): Promise<AnalysisResults> {
   // Parse tweets from uploaded data - try multiple field names
   const tweets: Tweet[] = rawData.map((item, idx) => {
     // Try to find text content in common field names
-    const textContent = item.text || item.tweet || item.content || item.message || 
+    const textContent = item.clean_text || item.text || item.tweet || item.content || item.message || 
                        item.description || item.body || item.comment || item.post || 
-                       item.Text || item.Tweet || item.Content || item.Message ||
+                       item.Clean_text || item.Text || item.Tweet || item.Content || item.Message ||
                        Object.values(item).find(v => typeof v === 'string' && v.length > 10) || "";
     
     return {
