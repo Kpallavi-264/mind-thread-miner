@@ -87,15 +87,28 @@ export async function processTweets(rawData: any[]): Promise<AnalysisResults> {
     text: item.text || item.tweet || item.content || "",
   })).filter(t => t.text.length > 0);
   
+  if (tweets.length === 0) {
+    throw new Error("No tweets found in the uploaded file. Ensure there's a 'text' field/column.");
+  }
+  
   console.log(`Processing ${tweets.length} tweets`);
   
+  // Prefer WebGPU when available, otherwise fall back to WASM
+  const device = (typeof navigator !== 'undefined' && 'gpu' in navigator) ? 'webgpu' as const : 'wasm' as const;
+  
   // Step 1: Generate embeddings using SBERT
-  console.log("Loading SBERT model...");
-  const embedder = await pipeline(
-    "feature-extraction",
-    "Xenova/all-MiniLM-L6-v2",
-    { device: "webgpu" }
-  );
+  console.log("Loading SBERT model...", { device });
+  let embedder: any;
+  try {
+    embedder = await pipeline(
+      "feature-extraction",
+      "Xenova/all-MiniLM-L6-v2",
+      { device }
+    );
+  } catch (e) {
+    console.warn("WebGPU/WASM init failed for embedder, retrying with defaults", e);
+    embedder = await pipeline("feature-extraction", "Xenova/all-MiniLM-L6-v2");
+  }
   
   console.log("Generating embeddings...");
   const texts = tweets.map(t => t.text);
@@ -108,7 +121,8 @@ export async function processTweets(rawData: any[]): Promise<AnalysisResults> {
   
   // Step 2: Clustering
   console.log("Performing K-Means clustering...");
-  const k = Math.min(5, Math.max(3, Math.floor(tweets.length / 50)));
+  const computedK = Math.max(3, Math.floor(tweets.length / 50));
+  const k = Math.max(1, Math.min(5, Math.min(computedK, tweets.length)));
   const clusterAssignments = kMeans(embeddingArrays, k);
   
   tweets.forEach((tweet, i) => {
@@ -117,10 +131,17 @@ export async function processTweets(rawData: any[]): Promise<AnalysisResults> {
   
   // Step 3: Sentiment Analysis
   console.log("Loading sentiment analysis model...");
-  const sentimentAnalyzer = await pipeline(
-    "sentiment-analysis",
-    "Xenova/distilbert-base-uncased-finetuned-sst-2-english"
-  );
+  let sentimentAnalyzer: any;
+  try {
+    sentimentAnalyzer = await pipeline(
+      "sentiment-analysis",
+      "Xenova/distilbert-base-uncased-finetuned-sst-2-english",
+      { device }
+    );
+  } catch (e) {
+    console.warn("Sentiment model init failed on", device, "— retrying with defaults", e);
+    sentimentAnalyzer = await pipeline("sentiment-analysis", "Xenova/distilbert-base-uncased-finetuned-sst-2-english");
+  }
   
   console.log("Analyzing sentiment...");
   const sentimentResults = await sentimentAnalyzer(texts);
@@ -141,9 +162,9 @@ export async function processTweets(rawData: any[]): Promise<AnalysisResults> {
   for (let i = 0; i < k; i++) {
     const clusterTweets = tweets.filter(t => t.cluster === i);
     const keywords = extractTopWords(clusterTweets).slice(0, 5).map(w => w.text);
-    const avgSentiment = clusterTweets.reduce((sum, t) => 
-      sum + (t.sentiment === "positive" ? 1 : t.sentiment === "negative" ? -1 : 0), 0
-    ) / clusterTweets.length;
+    const avgSentiment = clusterTweets.length > 0
+      ? clusterTweets.reduce((sum, t) => sum + (t.sentiment === "positive" ? 1 : t.sentiment === "negative" ? -1 : 0), 0) / clusterTweets.length
+      : 0;
     
     clusters.push({
       id: i,
