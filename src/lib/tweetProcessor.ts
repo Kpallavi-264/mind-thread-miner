@@ -81,14 +81,28 @@ function extractTopWords(tweets: Tweet[]): Array<{ text: string; frequency: numb
 export async function processTweets(rawData: any[]): Promise<AnalysisResults> {
   console.log("Starting tweet processing...");
   
-  // Parse tweets from uploaded data
-  const tweets: Tweet[] = rawData.map((item, idx) => ({
-    id: item.id || `tweet-${idx}`,
-    text: item.text || item.tweet || item.content || "",
-  })).filter(t => t.text.length > 0);
+  // Log available fields for debugging
+  if (rawData.length > 0) {
+    console.log("Available fields in data:", Object.keys(rawData[0]));
+  }
+  
+  // Parse tweets from uploaded data - try multiple field names
+  const tweets: Tweet[] = rawData.map((item, idx) => {
+    // Try to find text content in common field names
+    const textContent = item.text || item.tweet || item.content || item.message || 
+                       item.description || item.body || item.comment || item.post || 
+                       item.Text || item.Tweet || item.Content || item.Message ||
+                       Object.values(item).find(v => typeof v === 'string' && v.length > 10) || "";
+    
+    return {
+      id: item.id || item.ID || item.tweet_id || `tweet-${idx}`,
+      text: String(textContent).trim(),
+    };
+  }).filter(t => t.text.length > 0);
   
   if (tweets.length === 0) {
-    throw new Error("No tweets found in the uploaded file. Ensure there's a 'text' field/column.");
+    const sampleFields = rawData.length > 0 ? Object.keys(rawData[0]).join(", ") : "none";
+    throw new Error(`No tweets found. Found fields: ${sampleFields}. Please ensure your file has a column with text content (like 'text', 'tweet', 'content', etc.).`);
   }
   
   console.log(`Processing ${tweets.length} tweets`);
