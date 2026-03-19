@@ -95,6 +95,12 @@ npm run dev
 Frontend URL:
 - http://localhost:8080
 
+## Live Deployment
+
+- Frontend: https://mind-thread-miner-web.onrender.com/
+- Backend API: https://mind-thread-miner-api.onrender.com/
+- Backend Health Check: https://mind-thread-miner-api.onrender.com/api/health
+
 ## API Endpoints
 
 - GET /api/health
