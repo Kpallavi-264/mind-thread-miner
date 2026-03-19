@@ -5,7 +5,7 @@ import { Card } from "@/components/ui/card";
 import { useToast } from "@/hooks/use-toast";
 import { useNavigate } from "react-router-dom";
 import { useAnalysis } from "@/contexts/AnalysisContext";
-import { processTweets } from "@/lib/tweetProcessor";
+import { processTweetFile } from "@/lib/tweetProcessor";
 
 export const UploadSection = () => {
   const [dragActive, setDragActive] = useState(false);
@@ -61,24 +61,7 @@ export const UploadSection = () => {
     navigate("/dashboard");
 
     try {
-      const text = await file.text();
-      let data: any[];
-      
-      if (file.name.endsWith('.json')) {
-        data = JSON.parse(text);
-      } else {
-        // Simple CSV parser
-        const lines = text.split('\n').filter(l => l.trim());
-        const headers = lines[0].split(',').map(h => h.trim());
-        data = lines.slice(1).map(line => {
-          const values = line.split(',');
-          const obj: any = {};
-          headers.forEach((h, i) => obj[h] = values[i]?.trim());
-          return obj;
-        });
-      }
-
-      const results = await processTweets(data);
+      const results = await processTweetFile(file);
       setResults(results);
       
       toast({
