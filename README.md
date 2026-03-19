@@ -1,73 +1,173 @@
-# Welcome to your Lovable project
+# Mind Thread Miner
 
-## Project info
+Clustering and sentiment analysis platform for depression-related Twitter conversations.
 
-**URL**: https://lovable.dev/projects/e7862c8a-70f0-4086-913e-c06ea219a266
+This project combines semantic text processing, unsupervised clustering, sentiment mapping, and an interactive dashboard to identify key mental-health discussion themes and community concerns.
 
-## How can I edit this code?
+## Research Context
 
-There are several ways of editing your application.
+Project title:
+Clustering and Sentiment Analysis of Depression-Related Conversations on Twitter Using Sentence-BERT: Identifying Key Themes and Community Concerns
 
-**Use Lovable**
+Institution:
+SRM Institute of Science and Technology
 
-Simply visit the [Lovable Project](https://lovable.dev/projects/e7862c8a-70f0-4086-913e-c06ea219a266) and start prompting.
+Team:
+- K Pallavi
+- Khushi
+- Preeti Singh 
+- Vaishnavi
 
-Changes made via Lovable will be committed automatically to this repo.
+## Objectives
 
-**Use your preferred IDE**
+- Discover major conversation themes in depression-related tweets using clustering.
+- Map sentiment distribution (positive, negative, neutral) across themes.
+- Visualize trend patterns and topic-level emotional dynamics.
+- Provide interpretable insights useful for mental-health research and outreach planning.
 
-If you want to work locally using your own IDE, you can clone this repo and push changes. Pushed changes will also be reflected in Lovable.
+## Tech Stack
 
-The only requirement is having Node.js & npm installed - [install with nvm](https://github.com/nvm-sh/nvm#installing-and-updating)
+Frontend:
+- React + TypeScript + Vite
+- Tailwind CSS + shadcn/ui
+- Recharts
 
-Follow these steps:
+Backend:
+- Flask + Flask-CORS
+- pandas, numpy
+- scikit-learn
+- sentence-transformers (with TF-IDF fallback when unavailable)
 
-```sh
-# Step 1: Clone the repository using the project's Git URL.
-git clone <YOUR_GIT_URL>
+## Project Structure
 
-# Step 2: Navigate to the project directory.
-cd <YOUR_PROJECT_NAME>
+mind-thread-miner/
+- src/                        React frontend
+- Backend/                    Flask backend
+- Backend/app.py              API server
+- Backend/analysis.py         parsing, cleaning, sentiment scoring, trend building
+- Backend/ml_models.py        embeddings, clustering, keywords, projection
+- Backend/data/               input datasets
 
-# Step 3: Install the necessary dependencies.
-npm i
+## How It Works
 
-# Step 4: Start the development server with auto-reloading and an instant preview.
+1. User uploads CSV or JSON from the frontend.
+2. Frontend sends file to backend endpoint /api/upload.
+3. Backend pipeline:
+	 - reads and cleans text
+	 - computes embeddings
+	 - clusters tweets
+	 - scores sentiment
+	 - extracts keywords and trend buckets
+4. Backend returns analysis JSON.
+5. Dashboard renders clusters, sentiment, keywords, and trend visualizations.
+
+## Quick Start
+
+### 1) Clone
+
+```bash
+git clone https://github.com/Kpallavi-264/mind-thread-miner.git
+cd mind-thread-miner
+```
+
+### 2) Run Backend
+
+```bash
+cd Backend
+pip install -r requirements.txt
+python app.py
+```
+
+Backend URLs:
+- Health: http://127.0.0.1:5001/api/health
+- Sample response: http://127.0.0.1:5001/api/sample
+
+### 3) Run Frontend
+
+Open a new terminal:
+
+```bash
+cd mind-thread-miner
+npm install
 npm run dev
 ```
 
-**Edit a file directly in GitHub**
+Frontend URL:
+- http://localhost:8080
 
-- Navigate to the desired file(s).
-- Click the "Edit" button (pencil icon) at the top right of the file view.
-- Make your changes and commit the changes.
+## API Endpoints
 
-**Use GitHub Codespaces**
+- GET /api/health
+	- Returns service health status.
 
-- Navigate to the main page of your repository.
-- Click on the "Code" button (green button) near the top right.
-- Select the "Codespaces" tab.
-- Click on "New codespace" to launch a new Codespace environment.
-- Edit files directly within the Codespace and commit and push your changes once you're done.
+- GET /api/sample
+	- Returns a sample analysis payload.
 
-## What technologies are used for this project?
+- POST /api/upload
+	- Accepts multipart form-data with key file.
+	- Supported formats: .csv, .json, .txt
+	- Returns analysis payload with:
+		- tweets
+		- clusters
+		- sentimentDistribution
+		- topWords
+		- trends
 
-This project is built with:
+## Dataset Format
 
-- Vite
-- TypeScript
-- React
-- shadcn-ui
-- Tailwind CSS
+Recommended text columns:
+- clean_text (best)
+- or text, tweet, content, message, post, body, comment
 
-## How can I deploy this project?
+Example CSV:
 
-Simply open [Lovable](https://lovable.dev/projects/e7862c8a-70f0-4086-913e-c06ea219a266) and click on Share -> Publish.
+```csv
+post_text,label,clean_text
+"I feel tired today",1,"i feel tired today"
+"Therapy is helping me",0,"therapy is helping me"
+```
 
-## Can I connect a custom domain to my Lovable project?
+## Current Experimental Snapshot
 
-Yes, you can!
+From the latest internal evaluation sample (n=1200):
 
-To connect a domain, navigate to Project > Settings > Domains and click Connect Domain.
+- Cluster configuration used for theme reporting: k=5
+- Cluster sizes: {0: 1017, 1: 39, 2: 50, 3: 77, 4: 17}
+- Overall sentiment counts:
+	- positive: 113
+	- negative: 39
+	- neutral: 1048
 
-Read more here: [Setting up a custom domain](https://docs.lovable.dev/features/custom-domain#custom-domain)
+Example identified themes:
+- general daily emotional expression
+- positive/social support language
+- explicit mental-health discussion
+- daily stress and coping fluctuation
+- help-seeking and behavior-change tips
+
+## Ethical and Privacy Notes
+
+- Use outputs for aggregate-level research, not individual diagnosis.
+- Avoid storing or publishing personally identifying user data.
+- Report trends and theme-level findings in anonymized form.
+- Interpret results with bias awareness (platform effects, language bias, sampling bias).
+
+## Troubleshooting
+
+- Backend import error:
+	- Reinstall backend requirements.
+	- Ensure commands run inside Backend folder.
+
+- Frontend cannot reach backend:
+	- Confirm backend is running on port 5001.
+	- Confirm POST /api/upload is accessible.
+
+- Slow first run:
+	- Embedding setup may take time on first execution depending on environment.
+
+## Future Improvements
+
+- Add richer transformer sentiment model with batch inference.
+- Add persistent experiment logging and run metadata.
+- Add exportable report artifacts (charts + metrics tables).
+- Add deployment profiles for cloud hosting.
